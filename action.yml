@@ -1,0 +1,85 @@
+name: "Run RSFC"
+description: "Run RSFC analysis on a repository"
+
+inputs:
+  repo_url:
+    description: "Repository URL to analyze"
+    required: true
+  is_fork:
+    description: "Whether PR comes from fork"
+    required: true
+  pr_sha:
+    description: "PR SHA"
+    required: false
+  rsfc_token:
+    description: "Token for private repos"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install RSFC + dependencies
+      run: |
+        pip install rsfc
+        somef configure -a
+        python -m nltk.downloader wordnet
+        python -m nltk.downloader omw-1.4
+      shell: bash
+
+    - name: Create outputs directory
+      run: mkdir -p rsfc_output
+      shell: bash
+
+    - name: Run RSFC
+      run: |
+        if [ -z "${{ inputs.rsfc_token }}" ]; then
+          echo "Running RSFC on public repo"
+          rsfc --repo ${{ inputs.repo_url }} | tee rsfc_output.txt
+        else
+          echo "Running RSFC on private repo with token"
+          rsfc --repo ${{ inputs.repo_url }} -t ${{ inputs.rsfc_token }} | tee rsfc_output.txt
+        fi
+      shell: bash
+
+    - name: Upload RSFC report
+      uses: actions/upload-artifact@v4
+      with:
+        name: rsfc-report
+        path: rsfc_output
+
+    - name: Read RSFC console output
+      id: read_output
+      run: |
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        cat rsfc_output.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Create neutral check
+      if: ${{ inputs.is_fork != 'true' }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const headSha = "${{ inputs.pr_sha || github.sha }}"
+
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: "View report RSFC",
+            head_sha: headSha,
+            status: "completed",
+            conclusion: "neutral",
+            output: {
+              title: "RSFC report",
+              summary: `RSFC results:\n\n\`\`\`\n${{ steps.read_output.outputs.content }}\n\`\`\``
+            }
+          })

@@ -1,0 +1,16 @@
+name: Test RSFC Action
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run local action
+        uses: ./
+        with:
+          repo_url: https://github.com/${{ github.repository }}
+          is_fork: "false"
+          pr_sha: ${{ github.sha }}
