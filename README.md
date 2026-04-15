@@ -1,8 +1,6 @@
 # rsfc-action
 
-Repository for hosting the RSFC action available in Github Marketplace
-
-For more information on RSFC, you can visit its [Github repository](https://github.com/oeg-upm/rsfc)
+Repository for hosting the RSFC action available in Github Marketplace. For more information on RSFC, you can visit its [Github repository](https://github.com/oeg-upm/rsfc)
 
 ## Previous considerations
 
