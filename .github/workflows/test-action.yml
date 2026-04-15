@@ -3,6 +3,10 @@ name: Test RSFC Action
 on:
   push:
 
+permissions:
+  checks: write
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
